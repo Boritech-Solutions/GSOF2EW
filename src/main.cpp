@@ -32,6 +32,7 @@ int main(int argc, char *argv[])
     qDebug() << "Attaching to" << address.toString() << "at" << port;
     gps = new Client(address, port);
 
+
     while(true){
         ;
     }
