@@ -248,6 +248,7 @@ bool Client::process_message()
         }
 
         if (valid == 5) {
+            emit messageReceived(state);
             return true;
         } else {
             state.status = NO_FIX;

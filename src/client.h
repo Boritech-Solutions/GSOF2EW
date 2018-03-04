@@ -58,6 +58,9 @@ private slots:
     void displayError(QAbstractSocket::SocketError socketError);
     void processBytes();
 
+signals:
+    void messageReceived(GPS_State current);
+
 private:
     QTcpSocket *tcpSocket = nullptr;
     //QDataStream in;

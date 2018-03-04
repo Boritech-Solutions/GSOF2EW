@@ -31,7 +31,8 @@ int main(int argc, char *argv[])
 
     qDebug() << "Attaching to" << address.toString() << "at" << port;
     gps = new Client(address, port);
-
+    test = new EWconn();
+    QObject::connect(gps,SIGNAL(messageReceived(GPS_State)),test,SLOT(print2sc(GPS_State)));
 
     while(true){
         ;
