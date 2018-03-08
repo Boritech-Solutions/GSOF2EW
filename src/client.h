@@ -53,6 +53,7 @@ class Client : public QObject
     Q_OBJECT
 public:
     Client(QHostAddress address = QHostAddress("127.0.0.1"), qint16 port = 10000);
+    void request_gsof(uint8_t messagetype, uint8_t portindex);
 
 private slots:
     void displayError(QAbstractSocket::SocketError socketError);

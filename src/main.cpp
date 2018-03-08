@@ -35,7 +35,11 @@ int main(int argc, char *argv[])
     QObject::connect(gps,SIGNAL(messageReceived(GPS_State)),test,SLOT(print2sc(GPS_State)));
 
     while(true){
-        ;
+        gps->request_gsof(1,port);
+        gps->request_gsof(2,port);
+        gps->request_gsof(8,port);
+        gps->request_gsof(9,port);
+        gps->request_gsof(12,port);
     }
 
     cout << "Hello World!" << endl;

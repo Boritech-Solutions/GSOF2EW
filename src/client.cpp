@@ -4,8 +4,8 @@ Client::Client(QHostAddress address, qint16 port)
     : tcpSocket(new QTcpSocket(this))
 {
     //in.setDevice(tcpSocket);
-    connect(tcpSocket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error),
-            this, &Client::displayError);
+    //connect(tcpSocket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error),
+     //       this, &Client::displayError);
     connect(tcpSocket,SIGNAL(readyRead()),this,SLOT(processBytes()));
 
     tcpSocket->connectToHost(address, port);
@@ -256,6 +256,26 @@ bool Client::process_message()
     }
 
     return false;
+}
+
+void Client::request_gsof(uint8_t messagetype, uint8_t portindex)
+{
+    uint8_t buffer[21] = {0x02,0x00,0x64,0x0f,0x00,0x00,0x00, // application file record
+                              0x03,0x00,0x01,0x00, // file control information block
+                              0x07,0x06,0x0a,portindex,0x01,0x00,0x01,0x00, // output message record
+                              0x00,0x03
+                             }; // checksum
+
+        buffer[4] = 1;
+        buffer[17] = messagetype;
+
+        uint8_t checksum = 0;
+        for (uint8_t a = 1; a < (sizeof(buffer) - 1); a++) {
+            checksum += buffer[a];
+        }
+
+        buffer[19] = checksum;
+        tcpSocket->write((const char*)buffer, sizeof(buffer));
 }
 
 uint64_t Client::time_epoch_convert(uint16_t gps_week, uint32_t gps_ms)
