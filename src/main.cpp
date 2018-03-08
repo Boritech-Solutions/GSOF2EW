@@ -34,10 +34,7 @@ int main(int argc, char *argv[])
     test = new EWconn();
     QObject::connect(gps,SIGNAL(messageReceived(GPS_State)),test,SLOT(print2sc(GPS_State)));
 
-    while(true){
-        ;
-    }
-
     cout << "Hello World!" << endl;
-    return 0;
+
+    return app.exec();
 }
