@@ -33,6 +33,7 @@ void Client::displayError(QAbstractSocket::SocketError socketError)
 
 void Client::processBytes(){
     QByteArray data;
+    qDebug() << data;
     data = tcpSocket->readAll();
     for (int i = 0; i < data.size(); i++){
         parse(data.at(i));
