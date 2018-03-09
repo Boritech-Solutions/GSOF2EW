@@ -29,9 +29,10 @@ int main(int argc, char *argv[])
     QHostAddress address(args.at(0));
     qint16 port(args.at(1).toInt());
 
+    test = new EWconn(nullptr,QString("gps2ew_tcp.d"));
     qDebug() << "Attaching to" << address.toString() << "at" << port;
     gps = new Client(address, port);
-    test = new EWconn();
+
     QObject::connect(gps,SIGNAL(messageReceived(GPS_State)),test,SLOT(print2sc(GPS_State)));
 
     cout << "Hello World!" << endl;
