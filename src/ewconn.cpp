@@ -7,6 +7,22 @@ EWconn::EWconn(QObject *parent,QString configfile) : QObject(parent), config(con
     connectToEw();
 }
 
+QString EWconn::getHost()
+{
+    if(connected){
+        return add.toString();
+    }
+    return QString::null;
+}
+
+qint32 EWconn::getPort()
+{
+    if(connected){
+        return port;
+    }
+    return 0;
+}
+
 int EWconn::get_config(char *configfile)
 {
     int      nfiles;
@@ -118,6 +134,25 @@ int EWconn::get_config(char *configfile)
                 init[5] = 1;
             }
 
+            else if ( k_its( "SubX" ) )
+            {
+                SubX = k_int();
+                Xcor = true;
+                init[5] = 1;
+            }
+            else if ( k_its( "SubY" ) )
+            {
+                SubY = k_int();
+                Ycor = true;
+                init[5] = 1;
+            }
+            else if ( k_its( "SubZ" ) )
+            {
+                SubZ = k_int();
+                Ycor = true;
+                init[5] = 1;
+            }
+
             else if ( k_its( "LogFile" ) )
             {
                 logf = k_int();
@@ -193,16 +228,19 @@ int EWconn::get_config(char *configfile)
 
 void EWconn::appendlog(QString status)
 {
-    qDebug() << status;
+    if(debug == 1 || debug == 2)
+        qDebug() << status;
 }
 
-void EWconn::print2sc(GPS_State state)
+void EWconn::processState(GPS_State state)
 {
     mystate = state;
+    if (debug == 2){
     qDebug() << mystate.location.latitude() << mystate.location.longitude() << mystate.location.altitude();
     qDebug() << mystate.ECEF.X << mystate.ECEF.Y << mystate.ECEF.Z;
     qDebug() << mystate.last_gps_time;
     qDebug() << mystate.time_week << mystate.time_week_ms;
+    }
     createPacket();
 }
 
@@ -265,16 +303,25 @@ void EWconn::createPacket()
         ew_trace_pkt.trh2.endtime = ew_trace_pkt.trh2.starttime + (double)(ew_trace_pkt.trh2.nsamp - 1) / ew_trace_pkt.trh2.samprate;
 
         if (i == 0){
+            double X = mystate.ECEF.X;
+            if(Xcor)
+                X -= SubX;
             /* copy payload of 32-bit ints into trace buffer (after header) */
-            memcpy(&ew_trace_pkt.msg[sizeof(TRACE2_HEADER)],&mystate.ECEF.X , ew_trace_pkt.trh2.nsamp*sizeof(int32_t));
+            memcpy(&ew_trace_pkt.msg[sizeof(TRACE2_HEADER)],&X , ew_trace_pkt.trh2.nsamp*sizeof(int32_t));
         }
         if (i == 1){
+            double Y = mystate.ECEF.Y;
+            if(Ycor)
+                Y -= SubY;
             /* copy payload of 32-bit ints into trace buffer (after header) */
-            memcpy(&ew_trace_pkt.msg[sizeof(TRACE2_HEADER)],&mystate.ECEF.Y, ew_trace_pkt.trh2.nsamp*sizeof(int32_t));
+            memcpy(&ew_trace_pkt.msg[sizeof(TRACE2_HEADER)],&Y, ew_trace_pkt.trh2.nsamp*sizeof(int32_t));
         }
         if (i == 2){
+            double Z = mystate.ECEF.Z;
+            if(Zcor)
+                Z -= SubZ;
             /* copy payload of 32-bit ints into trace buffer (after header) */
-            memcpy(&ew_trace_pkt.msg[sizeof(TRACE2_HEADER)],&mystate.ECEF.Z, ew_trace_pkt.trh2.nsamp*sizeof(int32_t));
+            memcpy(&ew_trace_pkt.msg[sizeof(TRACE2_HEADER)],&Z, ew_trace_pkt.trh2.nsamp*sizeof(int32_t));
         }
 
         sleep_ew(10);/* Take a short nap so we don't flood the transport ring */
@@ -290,7 +337,6 @@ void EWconn::createPacket()
         }
     }
 }
-
 
 /************************************************************
  *               Connect to Earthworm                       *
@@ -337,7 +383,7 @@ int EWconn::connectToEw() {
         return -1;
     }
 
-    if( get_config(config.toLocal8Bit().data()) == -1)
+    if( get_config(config.toLatin1().data()) == -1)
         return -1;
 
     /* Attach to shared memory ring

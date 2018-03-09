@@ -10,6 +10,6 @@
 
 Client *gps;
 
-EWconn *test;
+EWconn *EWconnection;
 
 #endif // MAIN_H

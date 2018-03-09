@@ -9,16 +9,14 @@ int main(int argc, char *argv[])
 
     QCommandLineParser parser;
     parser.setApplicationDescription("Connects and converts gsof messages from trimble into EW Tracebuf");
-    parser.addPositionalArgument("Address", QCoreApplication::translate("main", ": IP address of the target GPS"));
-    parser.addPositionalArgument("Port", QCoreApplication::translate("main", ": Port of the target GPS"));
+    parser.addPositionalArgument("config_file", QCoreApplication::translate("main", ": Name of the EW Config file"));
 
     // Process the actual command line arguments given by the user
     parser.process(app);
 
     //remember to const this
     QStringList args = parser.positionalArguments();
-    args.append("127.0.0.1");
-    args.append("10000");
+    args.append("gsof2ew.d");
 
     if (args.size() < 1){
         fputs(qPrintable("Please pass the correct arguments"), stderr);
@@ -26,14 +24,17 @@ int main(int argc, char *argv[])
         fputs(qPrintable(parser.helpText()), stderr);
         return 1;
     }
-    QHostAddress address(args.at(0));
-    qint16 port(args.at(1).toInt());
 
-    test = new EWconn(nullptr,QString("gps2ew_tcp.d"));
+    EWconnection = new EWconn(nullptr,args.first());
+    usleep(3000);
+
+    QHostAddress address(EWconnection->getHost());
+    qint16 port = EWconnection->getPort();
+
     qDebug() << "Attaching to" << address.toString() << "at" << port;
     gps = new Client(address, port);
 
-    QObject::connect(gps,SIGNAL(messageReceived(GPS_State)),test,SLOT(print2sc(GPS_State)));
+    QObject::connect(gps,SIGNAL(messageReceived(GPS_State)),EWconnection,SLOT(processState(GPS_State)));
 
     cout << "Hello World!" << endl;
 

@@ -20,11 +20,12 @@ class EWconn : public QObject
     Q_OBJECT
 public:
     explicit EWconn(QObject *parent = nullptr, QString configfile = QString(""));
-
+    QString getHost();
+    qint32  getPort();
 signals:
 
 public slots:
-    void print2sc(GPS_State state);
+    void processState(GPS_State state);
 
 private:
     QString config;
@@ -43,6 +44,8 @@ private:
     qint32 debug;
     qint32 port;
     qint32 sampler;
+    double SubX,SubY,SubZ;
+    bool   Xcor,Ycor,Zcor;
 
     SHM_INFO   region;                /* The shared memory region   */
     MSG_LOGO   logo;
