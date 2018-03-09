@@ -4,7 +4,6 @@
 #include <QTcpSocket>
 #include <QDataStream>
 #include <QNetworkSession>
-#include <QDateTime>
 #include <QGeoCoordinate>
 #include <QVector3D>
 #include <QObject>
@@ -22,13 +21,7 @@ enum GPS_Status {
     GPS_OK_FIX_2D = 2,
     GPS_OK_FIX_3D = 3,
     GPS_OK_FIX_3D_DGPS = 4,
-    GPS_OK_FIX_3D_RTK = 5
-};
-
-struct ECEFPos {
-    double X;
-    double Y;
-    double Z;
+    GPS_OK_FIX_3D_RTK = 5,
 };
 
 struct GPS_State {
@@ -39,7 +32,6 @@ struct GPS_State {
     uint32_t time_week_ms;
     uint16_t time_week;
     QGeoCoordinate location;
-    ECEFPos ECEF;
     float ground_speed;
     float ground_course;
     uint16_t hdop;
@@ -54,7 +46,6 @@ struct GPS_State {
     bool have_horizontal_accuracy:1;
     bool have_vertical_accuracy:1;
     uint32_t last_gps_time_ms;
-    QDateTime last_gps_time;
 };
 
 class Client : public QObject
@@ -62,6 +53,7 @@ class Client : public QObject
     Q_OBJECT
 public:
     Client(QHostAddress address = QHostAddress("127.0.0.1"), qint16 port = 10000);
+    void request_gsof(uint8_t messagetype, uint8_t portindex);
 
 private slots:
     void displayError(QAbstractSocket::SocketError socketError);
@@ -81,6 +73,7 @@ private:
     bool parse(uint8_t temp);
     bool process_message();
     GPS_State state;
+
 
     static const uint8_t GSOF_STX = 0x02;
     static const uint8_t GSOF_ETX = 0x03;

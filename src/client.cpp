@@ -6,7 +6,8 @@ Client::Client(QHostAddress address, qint16 port)
     //in.setDevice(tcpSocket);
     //connect(tcpSocket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error),
      //       this, &Client::displayError);
-    connect(tcpSocket, &QIODevice::readyRead, this, &Client::processBytes);
+    connect(tcpSocket,SIGNAL(readyRead()),this,SLOT(processBytes()));
+
     tcpSocket->connectToHost(address, port);
     state.instance = 1;
 }
@@ -33,7 +34,7 @@ void Client::displayError(QAbstractSocket::SocketError socketError)
 void Client::processBytes(){
     QByteArray data;
     data = tcpSocket->readAll();
-
+    qDebug() << data;
     for (int i = 0; i < data.size(); i++){
         parse(data.at(i));
     }
@@ -167,7 +168,6 @@ bool Client::process_message()
         int valid = 0;
 
         // want 1 2 8 9 12
-        // I actually want 1 2 3
 
         for (uint32_t a = 3; a < gsof_msg.length; a++)
         {
@@ -215,16 +215,6 @@ bool Client::process_message()
                 valid++;
             }
 
-            else if (output_type == 3) // ECEF position
-            {
-                state.ECEF.X = SwapDouble(gsof_msg.data, a);
-                state.ECEF.Y = SwapDouble(gsof_msg.data, a + 8);
-                state.ECEF.Z = SwapDouble(gsof_msg.data, a + 16);
-
-                state.last_gps_time_ms = state.time_week_ms;
-                valid++;
-            }
-
             else if (output_type == 8) // velocity
             {
                 uint8_t vflag = gsof_msg.data[a];
@@ -258,8 +248,7 @@ bool Client::process_message()
             a += output_length-1u;
         }
 
-        if (valid == 3) {
-            state.last_gps_time.setMSecsSinceEpoch(time_epoch_convert(state.time_week,state.time_week_ms));
+        if (valid == 5) {
             emit messageReceived(state);
             return true;
         } else {
