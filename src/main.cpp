@@ -30,7 +30,8 @@ int main(int argc, char *argv[])
 
     // Initialize the EW connection
     EWconnection = new EWconn(nullptr, args.first(), pid);
-    usleep(3000);
+    sleep_ew(3000);
+    //usleep(3000);
 
     if(EWconnection->isConn()){
         // Setup address and port
