@@ -15,15 +15,19 @@ HeartbeatInt    30              # Heartbeat interval in seconds
 
 Network         PR              # Network name for EW msg headers
 
-StationID       SEAB		        # GPS Name
+StationID       PRSN		        # GPS Name
 
 Debug 0                         # debug level: 0 or commented out for no debug
                                 # logging; 1 - 4 for increasing verbosity
                                 # default: no debug output
                                 
-InjectVel                       # inject GPS Velocity
+#InjectVel                      # inject GPS Velocity
 
 SampRate       1                # GPS Samplerate in Hz
+
+#SubX           0               # Subtract from X value 
+#SubY           0               # Subtract from Y value
+#SubZ           0               # Subtract from Z value
 
 #ChannelNames	  GPX,GPY,GPZ	    # GPS Channels
 #

@@ -11,5 +11,7 @@
 Client *gps;
 
 EWconn *EWconnection;
+bool debug;
+bool velocity;
 
 #endif // MAIN_H

@@ -1,13 +1,19 @@
 #include "client.h"
 
-Client::Client(QHostAddress address, qint16 port)
-    : tcpSocket(new QTcpSocket(this))
+Client::Client(QHostAddress address, qint16 port, bool velreq)
+    : tcpSocket(new QTcpSocket(this)),
+      velocity(velreq)
 {
     //connect(tcpSocket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error),
     //       this, &Client::displayError);
     connect(tcpSocket, &QIODevice::readyRead, this, &Client::processBytes);
     tcpSocket->connectToHost(address, port);
     state.instance = 1;
+}
+
+bool Client::isconn()
+{
+    return (tcpSocket->state() == QTcpSocket::ConnectedState);
 }
 
 void Client::displayError(QAbstractSocket::SocketError socketError)
@@ -156,6 +162,7 @@ bool Client::process_message()
     //http://www.trimble.com/OEM_ReceiverHelp/V4.81/en/default.html#welcome.html
 
     if (gsof_msg.packettype == 0x40) { // GSOF
+
 #if gsof_DEBUGGING
         uint8_t trans_number = gsof_msg.data[0];
         uint8_t pageidx = gsof_msg.data[1];
@@ -164,9 +171,10 @@ bool Client::process_message()
 #endif
 
         int valid = 0;
+        bool vel = false;
 
         // want 1 2 8 9 12
-        // I actually want 1 2 3
+        // I actually want 1 2 3 OR 1 2 3 8
 
         for (uint32_t a = 3; a < gsof_msg.length; a++)
         {
@@ -237,6 +245,7 @@ bool Client::process_message()
                     state.velocity.setZ(-SwapFloat(gsof_msg.data, a + 9));
                     state.have_vertical_velocity = true;
                 }
+                vel = true;
                 valid++;
             }
 
@@ -257,11 +266,17 @@ bool Client::process_message()
             a += output_length-1u;
         }
 
-        if (valid == 3) {
+        if (valid == 3 && ( velocity == vel)) {
             state.last_gps_time.setMSecsSinceEpoch(time_epoch_convert(state.time_week,state.time_week_ms));
             emit messageReceived(state);
             return true;
-        } else {
+        }
+        else if (velocity && valid >= 4 && vel){
+            state.last_gps_time.setMSecsSinceEpoch(time_epoch_convert(state.time_week,state.time_week_ms));
+            emit messageReceived(state);
+            return true;
+        }
+        else {
             state.status = NO_FIX;
         }
     }

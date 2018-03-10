@@ -1,6 +1,6 @@
 #include "ewconn.h"
 
-EWconn::EWconn(QObject *parent,QString configfile) : QObject(parent), config(configfile)
+EWconn::EWconn(QObject *parent,QString configfile, qint64 mypid) : QObject(parent), config(configfile), pid(mypid), BeatHeart(new QTimer)
 {
     connected = false;
     velocity  = false;
@@ -23,6 +23,17 @@ qint32 EWconn::getPort()
     return 0;
 }
 
+bool EWconn::getVelF()
+{
+    return velocity;
+}
+
+bool EWconn::isConn()
+{
+    return connected;
+}
+
+/* Get EW configuration         */
 int EWconn::get_config(char *configfile)
 {
     int      nfiles;
@@ -226,12 +237,14 @@ int EWconn::get_config(char *configfile)
     return 0;
 }
 
+/* Append stuff to log WIP      */
 void EWconn::appendlog(QString status)
 {
     if(debug == 1 || debug == 2)
         qDebug() << status;
 }
 
+/* Process GPS State            */
 void EWconn::processState(GPS_State state)
 {
     mystate = state;
@@ -241,10 +254,17 @@ void EWconn::processState(GPS_State state)
     qDebug() << mystate.last_gps_time;
     qDebug() << mystate.time_week << mystate.time_week_ms;
     }
-    createPacket();
+    createTracePacket();
 }
 
-void EWconn::createPacket()
+/* Send Heartbeat Packet        */
+void EWconn::sendHB()
+{
+    createHBPacket(TypeHeartBeat, 0, NULL);
+}
+
+/* Create Trace Packet          */
+void EWconn::createTracePacket()
 {
     for (int i=0; i < 3; i++){
         static int cd;
@@ -335,13 +355,125 @@ void EWconn::createPacket()
             qDebug() << "There has been an error";
             return;
         }
+
+        if(velocity) {
+
+            TracePacket ew_trace_pkt;
+            MSG_LOGO logo;
+            logo.type = TypeTraceBuf2;
+            logo.mod = mod_id;
+            logo.instid = InstId;
+            memset(&ew_trace_pkt,0,sizeof(ew_trace_pkt));
+            strncpy(ew_trace_pkt.trh2.sta,staID.toLocal8Bit().data(), TRACE2_STA_LEN-1);
+            ew_trace_pkt.trh2.version[0]=TRACE2_VERSION0;
+            ew_trace_pkt.trh2.version[1]=TRACE2_VERSION1;
+            strcpy(ew_trace_pkt.trh2.datatype,"i4");   /* enter data type (Intel ints) */
+            ew_trace_pkt.trh2.samprate = (double) sampler; /* enter GPS sample rate */
+            ew_trace_pkt.trh2.nsamp = sampler;   /* enter GPS number of samples rate */
+
+            if (sizeof(TRACE2_HEADER) + ew_trace_pkt.trh2.nsamp * sizeof(int32_t) > MAX_TRACEBUF_SIZ)
+            {
+                /* exit thread function */
+                qDebug() << "There will be an error";
+                return;
+            }
+
+            strncpy(ew_trace_pkt.trh2.chan, chanv, TRACE2_CHAN_LEN-1);
+            ew_trace_pkt.trh2.chan[TRACE2_CHAN_LEN-1] = '\0';
+
+            strncpy(ew_trace_pkt.trh2.net,netID.toLocal8Bit().data(), TRACE2_NET_LEN-1);
+            ew_trace_pkt.trh2.loc[TRACE2_LOC_LEN-1] = '\0';
+
+            strncpy(ew_trace_pkt.trh2.loc,"--", TRACE2_LOC_LEN-1);
+            ew_trace_pkt.trh2.loc[TRACE2_LOC_LEN-1] = '\0';
+
+            double starttime = (double) mystate.last_gps_time.toSecsSinceEpoch();
+
+            /* calculate and enter start-timestamp for packet */
+            ew_trace_pkt.trh2.starttime = starttime;
+
+            /* endtime is the time of last sample in this packet, not the time *
+         * of the first sample in the next packet */
+            ew_trace_pkt.trh2.endtime = ew_trace_pkt.trh2.starttime + (double)(ew_trace_pkt.trh2.nsamp - 1) / ew_trace_pkt.trh2.samprate;
+
+            if (i == 0){
+                /* copy payload of 32-bit ints into trace buffer (after header) */
+                const double X = mystate.velocity.x();
+                memcpy(&ew_trace_pkt.msg[sizeof(TRACE2_HEADER)],&X , ew_trace_pkt.trh2.nsamp*sizeof(int32_t));
+            }
+            if (i == 1){
+                /* copy payload of 32-bit ints into trace buffer (after header) */
+                const double Y = mystate.velocity.y();
+                memcpy(&ew_trace_pkt.msg[sizeof(TRACE2_HEADER)],&Y, ew_trace_pkt.trh2.nsamp*sizeof(int32_t));
+            }
+            if (i == 2){
+                /* copy payload of 32-bit ints into trace buffer (after header) */
+                const double Z = mystate.velocity.z();
+                memcpy(&ew_trace_pkt.msg[sizeof(TRACE2_HEADER)],&Z, ew_trace_pkt.trh2.nsamp*sizeof(int32_t));
+            }
+
+            sleep_ew(10);/* Take a short nap so we don't flood the transport ring */
+
+
+            /* send data trace message to Earthworm */
+            if ( (cd = tport_putmsg(&region, &logo,
+                                    (int32_t)sizeof(TRACE2_HEADER) + (int32_t)ew_trace_pkt.trh2.nsamp * sizeof(int32_t),
+                                    (char *)&ew_trace_pkt)) != PUT_OK)
+            {
+                qDebug() << "There has been an error";
+                return;
+            }
+        }
     }
 }
 
-/************************************************************
- *               Connect to Earthworm                       *
- * Should be used to connect to earthworm                   *
- * *********************************************************/
+/* Create Heartbeat Packet      */
+void EWconn::createHBPacket(unsigned char type,short code, char* message )
+{
+    char          outMsg[MAX_MSG_SIZE]; /* The outgoing message.        */
+    time_t        msgTime;              /* Time of the message.         */
+
+    /*  Get the time of the message                                     */
+    time( &msgTime );
+
+    /*  Build & process the message based on the type                     */
+    if ( heartbeat == type )
+    {
+      sprintf( outMsg, "%ld %d\n", (long) msgTime,(int) pid );
+
+      /*Write the message to the output region                            */
+      if ( tport_putmsg( &region, &hblogo, (long) strlen(outMsg), outMsg ) != PUT_OK )
+      {
+        /*     Log an error message                                       */
+        appendlog("Failed to send a heartbeat message");
+      }
+    }
+    else
+    {
+      if ( message )
+      {
+          sprintf( outMsg, "%ld %hd %s\n", (long) msgTime, code, message );
+          appendlog("Error:"+QString(message));
+      }
+      else
+      {
+          sprintf( outMsg, "%ld %hd\n", (long) msgTime, code );
+          appendlog("Error: (No description)");
+      }
+
+      MSG_LOGO error;
+      error.instid = InstId;
+      error.mod    = mod_id;
+      error.type   = TypeError;
+      /*Write the message to the output region                         */
+      if ( tport_putmsg( &region, &error, (long) strlen( outMsg ), outMsg ) != PUT_OK )
+      {
+        appendlog("Failed to send an error message");
+      }
+    }
+}
+
+/* Connect to Earthworm         */
 int EWconn::connectToEw() {
     // Set Stuff
     char *runPath;
@@ -378,26 +510,40 @@ int EWconn::connectToEw() {
         return -1;
     }
 
-    if ( GetType( "TYPE_TRACEBUF2", &TypeTraceBuf2 ) != 0 ) {
-        appendlog("status: Invalid message type <TYPE_TRACEBUF2> exiting!\n");
-        return -1;
+    /* setup logo type values for Eartworm messages */
+    if(GetType("TYPE_ERROR", &TypeError) != 0 ||
+       GetType("TYPE_HEARTBEAT",&TypeHeartBeat) != 0 ||
+       GetType("TYPE_TRACEBUF2",&TypeTraceBuf2) != 0)
+    {
+      /* error fetching logo type values; show error message and abort */
+      appendlog("Error fetching logo type values for EW messages");
+      return  -1;
     }
 
     if( get_config(config.toLatin1().data()) == -1)
         return -1;
 
+    // Define a heartbeat
+    hblogo.instid = InstId;
+    hblogo.mod    = mod_id;
+    hblogo.type   = TypeHeartBeat;
+
     /* Attach to shared memory ring
         *****************************/
     tport_attach( &region, ring_id );
 
+    /* Start beating our heart */
+    BeatHeart->setInterval(heartbeat*1000);
+    connect(BeatHeart,SIGNAL(timeout()),this,SLOT(sendHB()));
+    BeatHeart->start();
+
+    // Report connected
     connected = true;
+
     return 0;
 }
 
-/************************************************************
- *               Disconnect From Earthworm                  *
- * Should be used to disconnect to earthworm                *
- * *********************************************************/
+/* Disconnect From Earthworm    */
 int EWconn::disconnectFromEw(){
     if (connected){
         tport_detach( &region );
@@ -408,4 +554,3 @@ int EWconn::disconnectFromEw(){
         return 0;
     }
 }
-
