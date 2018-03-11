@@ -22,9 +22,8 @@ int main(int argc, char *argv[])
 
     // Past the correct arguments
     if (args.size() < 1){
-        fputs(qPrintable("Please pass the correct arguments"), stderr);
-        fputs("\n\n", stderr);
-        fputs(qPrintable(parser.helpText()), stderr);
+        qDebug () << "Please pass the correct arguments";
+        qDebug () << parser.helpText();
         return 1;
     }
 
