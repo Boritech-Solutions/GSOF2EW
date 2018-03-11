@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 
     // Set up CLI Parser
     QCommandLineParser parser;
-    parser.setApplicationDescription("Connects and converts gsof messages from trimble into EW Tracebuf");
+    parser.setApplicationDescription("Connects and converts gsof messages from trimble into EW Tracebuf\n");
     parser.addPositionalArgument("config_file", QCoreApplication::translate("main", ": Name of the EW Config file"));
 
     // Process the actual command line arguments given by the user
@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 
     // Past the correct arguments
     if (args.size() < 1){
-        qDebug () << "Please pass the correct arguments";
+        qDebug () << "Please pass the correct arguments\n";
         qDebug () << parser.helpText();
         return 1;
     }
