@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
     // Past the correct arguments
     if (args.size() < 1){
         qDebug () << "Please pass the correct arguments\n";
-        qDebug () << parser.helpText();
+        std::cout << parser.helpText().toLatin1().data();
         return 1;
     }
 
