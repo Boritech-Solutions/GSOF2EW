@@ -323,23 +323,26 @@ void EWconn::createTracePacket()
         ew_trace_pkt.trh2.endtime = ew_trace_pkt.trh2.starttime + (double)(ew_trace_pkt.trh2.nsamp - 1) / ew_trace_pkt.trh2.samprate;
 
         if (i == 0){
-            double X = mystate.ECEF.X;
+            double tempX = mystate.ECEF.X;
             if(Xcor)
-                X -= SubX;
+                tempX -= SubX;
+            int32_t X = (int32_t) (tempX*1000); // Convert to mm
             /* copy payload of 32-bit ints into trace buffer (after header) */
             memcpy(&ew_trace_pkt.msg[sizeof(TRACE2_HEADER)],&X , ew_trace_pkt.trh2.nsamp*sizeof(int32_t));
         }
         if (i == 1){
-            double Y = mystate.ECEF.Y;
+            double tempY = mystate.ECEF.Y;
             if(Ycor)
-                Y -= SubY;
+                tempY -= SubY;
+            int32_t Y = (int32_t) (tempY * 1000); // Convert to mm
             /* copy payload of 32-bit ints into trace buffer (after header) */
             memcpy(&ew_trace_pkt.msg[sizeof(TRACE2_HEADER)],&Y, ew_trace_pkt.trh2.nsamp*sizeof(int32_t));
         }
         if (i == 2){
-            double Z = mystate.ECEF.Z;
+            double tempZ = mystate.ECEF.Z;
             if(Zcor)
-                Z -= SubZ;
+                tempZ -= SubZ;
+            int32_t Z = (int32_t) (tempZ * 1000); // Convert to mm
             /* copy payload of 32-bit ints into trace buffer (after header) */
             memcpy(&ew_trace_pkt.msg[sizeof(TRACE2_HEADER)],&Z, ew_trace_pkt.trh2.nsamp*sizeof(int32_t));
         }
@@ -437,7 +440,7 @@ void EWconn::createHBPacket(unsigned char type,short code, char* message )
     msgTime = QDateTime::currentDateTimeUtc().toTime_t();
 
     /*  Build & process the message based on the type                     */
-    if ( heartbeat == type )
+    if ( TypeHeartBeat == type )
     {
       sprintf( outMsg, "%ld %d\n", (long) msgTime,(int) pid );
 
