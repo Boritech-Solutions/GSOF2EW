@@ -28,8 +28,3 @@ SampRate       1                # GPS Samplerate in Hz
 #SubX           0               # Subtract from X value 
 #SubY           0               # Subtract from Y value
 #SubZ           0               # Subtract from Z value
-
-#ChannelNames	  GPX,GPY,GPZ	    # GPS Channels
-#
-#LocationNames   --,--,--	      # If present, assign location codes to
-#				                        # the TRACEBUF packets emitted by gps2ew.
