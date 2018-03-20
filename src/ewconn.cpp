@@ -404,17 +404,17 @@ void EWconn::createTracePacket()
 
             if (i == 0){
                 /* copy payload of 32-bit ints into trace buffer (after header) */
-                const double X = mystate.velocity.x();
+                qint32 X = (qint32) (mystate.velocity.x() * 1000); // To mm per sec
                 memcpy(&ew_trace_pkt.msg[sizeof(TRACE2_HEADER)],&X , ew_trace_pkt.trh2.nsamp*sizeof(int32_t));
             }
             if (i == 1){
                 /* copy payload of 32-bit ints into trace buffer (after header) */
-                const double Y = mystate.velocity.y();
+                qint32 Y = (qint32) (mystate.velocity.y() * 1000); // To mm per sec
                 memcpy(&ew_trace_pkt.msg[sizeof(TRACE2_HEADER)],&Y, ew_trace_pkt.trh2.nsamp*sizeof(int32_t));
             }
             if (i == 2){
                 /* copy payload of 32-bit ints into trace buffer (after header) */
-                const double Z = mystate.velocity.z();
+                qint32 Z = (qint32) (mystate.velocity.z()* 1000); // To mm per sec
                 memcpy(&ew_trace_pkt.msg[sizeof(TRACE2_HEADER)],&Z, ew_trace_pkt.trh2.nsamp*sizeof(int32_t));
             }
 
