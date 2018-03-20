@@ -41,9 +41,9 @@ int main(int argc, char *argv[])
         // Check for debug
         qDebug() << "Attaching to" << address.toString() << "at" << port;
         gps = new Client(address, port, velocity);
+        gps->connectToGPS();
         if (gps->isconn())
             QObject::connect(gps,SIGNAL(messageReceived(GPS_State)),EWconnection,SLOT(processState(GPS_State)));
-
     }
 
     cout << "Hello World!" << endl;
