@@ -312,13 +312,11 @@ void EWconn::createTracePacket()
 
         strncpy(ew_trace_pkt.trh2.loc,"--", TRACE2_LOC_LEN-1);
         ew_trace_pkt.trh2.loc[TRACE2_LOC_LEN-1] = '\0';
-        
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 8, 0))
         double starttime = (double) mystate.last_gps_time.toSecsSinceEpoch();
 #else
         double starttime = (double) mystate.last_gps_time.toTime_t();
 #endif
-        
         /* calculate and enter start-timestamp for packet */
         ew_trace_pkt.trh2.starttime = starttime;
 
@@ -393,13 +391,11 @@ void EWconn::createTracePacket()
 
             strncpy(ew_trace_pkt.trh2.loc,"--", TRACE2_LOC_LEN-1);
             ew_trace_pkt.trh2.loc[TRACE2_LOC_LEN-1] = '\0';
-            
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 8, 0))
             double starttime = (double) mystate.last_gps_time.toSecsSinceEpoch();
 #else
             double starttime = (double) mystate.last_gps_time.toTime_t();
 #endif
-            
             /* calculate and enter start-timestamp for packet */
             ew_trace_pkt.trh2.starttime = starttime;
 
@@ -445,7 +441,7 @@ void EWconn::createHBPacket(unsigned char type,short code, char* message )
     time_t        msgTime;              /* Time of the message.         */
 
     /*  Get the time of the message                                     */
-    msgTime = QDateTime::currentDateTimeUtc().toTime_t();
+    time( &msgTime );
 
     /*  Build & process the message based on the type                     */
     if ( TypeHeartBeat == type )
