@@ -20,7 +20,7 @@ bool Client::isconn()
 void Client::connectToGPS()
 {
     tcpSocket->connectToHost(address, port);
-    tcpSocket->waitForConnected();
+    tcpSocket->waitForConnected(180000);
 }
 
 void Client::displayError(QAbstractSocket::SocketError socketError)
