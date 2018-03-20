@@ -1,19 +1,26 @@
 #include "client.h"
 
-Client::Client(QHostAddress address, qint16 port, bool velreq)
+Client::Client(QHostAddress maddress, qint16 mport, bool velreq)
     : tcpSocket(new QTcpSocket(this)),
-      velocity(velreq)
+      velocity(velreq),
+      address(maddress),
+      port(mport)
 {
     //connect(tcpSocket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error),
     //       this, &Client::displayError);
     connect(tcpSocket, &QIODevice::readyRead, this, &Client::processBytes);
-    tcpSocket->connectToHost(address, port);
     state.instance = 1;
 }
 
 bool Client::isconn()
 {
     return (tcpSocket->state() == QTcpSocket::ConnectedState);
+}
+
+void Client::connectToGPS()
+{
+    tcpSocket->connectToHost(address, port);
+    tcpSocket->waitForConnected();
 }
 
 void Client::displayError(QAbstractSocket::SocketError socketError)
