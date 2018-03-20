@@ -2,9 +2,9 @@
 
 Client::Client(QHostAddress maddress, qint16 mport, bool velreq)
     : tcpSocket(new QTcpSocket(this)),
-      velocity(velreq),
       address(maddress),
-      port(mport)
+      port(mport),
+      velocity(velreq)
 {
     //connect(tcpSocket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error),
     //       this, &Client::displayError);
