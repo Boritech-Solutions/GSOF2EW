@@ -61,8 +61,9 @@ class Client : public QObject
 {
     Q_OBJECT
 public:
-    Client(QHostAddress address = QHostAddress("127.0.0.1"), qint16 port = 10000, bool velreq = false);
+    Client(QHostAddress maddress = QHostAddress("127.0.0.1"), qint16 mport = 10000, bool velreq = false);
     bool isconn();
+    void connectToGPS();
 
 private slots:
     void displayError(QAbstractSocket::SocketError socketError);
@@ -83,6 +84,8 @@ private:
     bool process_message();
     bool velocity;
     GPS_State state;
+    qint64 port;
+    QHostAddress address;
 
     static const uint8_t GSOF_STX = 0x02;
     static const uint8_t GSOF_ETX = 0x03;
